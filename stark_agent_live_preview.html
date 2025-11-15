@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>STARK Agent</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --app-bg: #fdf9f6;
+      --card-bg:#ffffff;
+      --border:#f2d7d5;
+      --soft:#ffe7e0;
+      --pill:#ffb6a6;
+      --cta:#ff7f6a;
+      --ink:#4a3332;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background: var(--app-bg);
+      color:#1f1b1a;
+      height:100vh;
+      display:flex;
+    }
+
+    .app{ display:grid; grid-template-columns: 260px 1fr; width:100%; height:100vh; }
+    .sidebar{ background: var(--card-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:14px 12px; }
+    .brand{ font-weight:700; letter-spacing:.2px; padding:8px 10px; border-radius:12px; color:#1f1b1a; background: var(--soft); border:1px solid var(--border); margin-bottom:10px; }
+    .nav{ display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+    .nav button{ text-align:left; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; cursor:pointer; font-size:14px; }
+    .nav button.active{ background: var(--pill); color:#fff; border-color: var(--pill); }
+
+    .main{ display:flex; flex-direction:column; height:100%; }
+    .topbar{ height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; border-bottom:1px solid var(--border); background:#fff; }
+    .title{font-weight:600}
+
+    .content{ padding:16px; overflow:auto; height:calc(100vh - 52px); background:#fff; }
+
+    .panel{ background:#fff; border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow: 0 10px 25px rgba(0,0,0,.05); }
+
+    .chat-wrap{ display:grid; grid-template-rows: 1fr auto; height:72vh }
+    .chat-messages{ border:1px solid var(--border); border-radius:12px; padding:12px; overflow:auto; background:#fff; }
+    .message{ margin-bottom:10px; max-width:85%; line-height:1.4; font-size:14px }
+    .message.bot{text-align:left}.message.user{text-align:right}
+    .message .bubble{ display:inline-block; padding:8px 10px; border-radius:12px; white-space:pre-wrap }
+    .message.bot .bubble{ background:var(--soft); color:var(--ink) }
+    .message.user .bubble{ background:var(--pill); color:#fff }
+    .chat-footer{ display:flex; gap:8px; margin-top:12px }
+    .chat-footer input{ flex:1; padding:10px 12px; border-radius:999px; border:1px solid var(--border); font-size:14px }
+
+    .btn{ padding:10px 14px; border-radius:999px; border:none; background:var(--cta); color:#fff; font-weight:600; cursor:pointer }
+    .btn:disabled{ opacity:.5; cursor:default }
+
+    .grid{ display:grid; gap:12px }
+    .form-row{ display:flex; flex-direction:column; gap:6px }
+    label{ font-size:14px; font-weight:600 }
+    input[type="text"], input[type="number"], select, textarea{ padding:10px 12px; border-radius:10px; border:1px solid var(--border); font-size:14px }
+
+    .pill-note{ display:inline-block; background:#fff; border:1px solid var(--border); border-radius:999px; padding:6px 10px; font-size:12px }
+    .muted{opacity:.85}
+    .stack{ display:flex; flex-direction:column; gap:10px }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+    .hidden{ display:none !important; }
+    .soft{ background:var(--soft); border:1px solid var(--border); border-radius:12px; padding:10px }
+    .divider{ height:1px; background:var(--border); margin:8px 0 }
+    .list{ padding-left:18px }
+    .pill-note.active{ background:var(--pill); color:#fff; border-color: var(--pill); }
+
+    /* Event cards */
+    .event-card{ border:1px solid var(--border); border-radius:12px; padding:10px; background:#fff; margin:8px 0; }
+    .event-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .link-btn{ display:inline-block; text-decoration:none; background:#fff; border:1px solid var(--border); border-radius:999px; padding:8px 12px; font-size:13px; cursor:pointer; }
+    .link-btn.primary{ background: var(--cta); color:#fff; border-color: var(--cta); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">STARK Agent</div>
+      <div class="nav">
+        <button data-page="chat" class="active">Chat</button>
+        <button data-page="onboarding">Onboarding Form</button>
+        <button data-page="lookup">Lookup Summary</button>
+        <button data-page="resume">Resume Check</button>
+      </div>
+      <div style="margin-top:auto" class="soft">
+        <div style="font-weight:600;margin-bottom:4px">Mode</div>
+        <div class="row">
+          <button id="advisorMode" class="pill-note">Advisor</button>
+          <button id="studentMode" class="pill-note">Student</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="title" id="pageTitle">Chat</div>
+        <div class="muted" id="metaChip">Connecting…</div>
+      </div>
+
+      <div class="content">
+        <!-- CHAT -->
+        <section id="page-chat" class="panel">
+          <div class="stack">
+            <div id="chatHint" class="muted">Select a mode (Advisor/Student) in the sidebar to tailor responses.</div>
+            <div class="chat-wrap">
+              <div id="messages" class="chat-messages"></div>
+              <div>
+                <div class="chat-footer">
+                  <input id="input" type="text" placeholder="Type here..." />
+                  <button id="sendBtn" class="btn">Send</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ONBOARDING -->
+        <section id="page-onboarding" class="panel hidden">
+          <div class="stack">
+            <div class="muted">Fill these 10 items and submit. Labels will auto-load from the API when available.</div>
+            <div class="grid">
+              <div id="onboardingForm" class="grid"></div>
+              <div class="row">
+                <button id="submitOnboarding" class="btn">Submit Onboarding</button>
+              </div>
+              <div id="onboardingResult" class="soft hidden"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- LOOKUP (Advisor) -->
+        <section id="page-lookup" class="panel hidden">
+          <div class="stack">
+            <div class="row">
+              <input id="lookupUid" type="text" placeholder="Enter UID..." style="max-width:260px" />
+              <button id="lookupBtn" class="btn">Fetch Summary</button>
+            </div>
+            <div id="lookupResult" class="soft hidden"></div>
+          </div>
+        </section>
+
+        <!-- ATS -->
+        <section id="page-resume" class="panel hidden">
+          <div class="stack">
+            <div class="grid" style="max-width:720px">
+              <div class="form-row">
+                <label for="atsDomain">Choose Domain</label>
+                <select id="atsDomain"></select>
+              </div>
+              <div class="form-row">
+                <label for="atsRole">Choose Role</label>
+                <select id="atsRole"></select>
+              </div>
+              <div class="form-row">
+                <label>Upload Résumé (PDF)</label>
+                <div class="row">
+                  <input type="file" id="resumeFile2" accept="application/pdf" />
+                  <button id="atsAnalyzeBtn" class="btn">Upload & Analyze</button>
+                </div>
+              </div>
+              <div id="atsResult" class="soft hidden"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    /* -------- NAV -------- */
+    const pages = ["chat","onboarding","lookup","resume"];
+    const pageEls = Object.fromEntries(pages.map(p=>[p, document.getElementById("page-"+p)]));
+    const titleEl = document.getElementById("pageTitle");
+
+    document.querySelectorAll(".nav button").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        const page = btn.dataset.page;
+        titleEl.textContent = btn.textContent;
+        pages.forEach(p=>pageEls[p].classList.toggle("hidden", p!==page));
+      });
+    });
+
+    /* -------- MODE -------- */
+    const advisorBtn = document.getElementById("advisorMode");
+    const studentBtn = document.getElementById("studentMode");
+    let mode = null;
+
+    advisorBtn.addEventListener("click", ()=> setMode("advisor"));
+    studentBtn.addEventListener("click", ()=> setMode("student"));
+
+    function setMode(m){
+      mode = m;
+      advisorBtn.classList.toggle("active", m==="advisor");
+      studentBtn.classList.toggle("active", m==="student");
+      clearMessages();
+      addMessage("bot", m==="advisor"
+        ? "You’re in Advisor mode. Enter a UID in Lookup Summary or type a UID here in chat."
+        : "You’re in Student mode. Use the Onboarding Form, ask FAQs here, or run ATS under Resume Check."
+      );
+    }
+
+    /* -------- CHAT -------- */
+    const messagesEl = document.getElementById("messages");
+    const inputEl = document.getElementById("input");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function addMessage(sender, text){
+      const wrap = document.createElement("div");
+      wrap.className = "message " + sender;
+      const b = document.createElement("div");
+      b.className = "bubble";
+      b.textContent = text;
+      wrap.appendChild(b);
+      messagesEl.appendChild(wrap);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+    function clearMessages(){ messagesEl.innerHTML=""; }
+
+    sendBtn.addEventListener("click", handleSend);
+    inputEl.addEventListener("keydown", e=>{ if(e.key==="Enter") handleSend(); });
+
+    async function handleSend(){
+      const text = inputEl.value.trim();
+      if(!text) return;
+      addMessage("user", text);
+      inputEl.value = "";
+
+      if(!mode){
+        addMessage("bot","Pick a mode first (Advisor or Student in the sidebar).");
+        return;
+      }
+
+      if(mode==="advisor"){
+        if(/^\d{3,}$/.test(text)){
+          await handleAdvisorUID(text);
+        } else {
+          addMessage("bot","Advisor chat active. Enter a UID (or use the Lookup Summary tab).");
+        }
+        return;
+      }
+
+      if(mode==="student"){
+        const lower = text.toLowerCase();
+        if(lower.includes("resume") || lower === "ats"){
+          document.querySelector('.nav button[data-page="resume"]').click();
+          addMessage("bot","Opening Resume Check – choose a domain & role, then upload your PDF.");
+          return;
+        }
+        await handleStudentFaqQuestion(text);
+      }
+    }
+
+    async function handleStudentFaqQuestion(question){
+      try{
+        const res = await fetch(`${API_BASE}/api/faq/ask`,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            student_id: "web-student",
+            question,
+            use_llm: false
+          })
+        });
+        const data = await res.json();
+        addMessage(
+          "bot",
+          res.ok
+            ? (data.answer || "I couldn't find anything helpful.")
+            : (data.detail || "I couldn't answer that right now.")
+        );
+      }catch(e){
+        addMessage("bot","Something went wrong while contacting the FAQ backend.");
+      }
+    }
+
+    /* -------- ADVISOR LOOKUP -------- */
+    const lookupBtn = document.getElementById("lookupBtn");
+    const lookupUid = document.getElementById("lookupUid");
+    const lookupResult = document.getElementById("lookupResult");
+
+    lookupBtn.addEventListener("click", ()=>{
+      const uid = lookupUid.value.trim();
+      handleAdvisorUID(uid);
+    });
+
+    async function handleAdvisorUID(uid){
+      if(!uid){
+        addMessage("bot","Please provide a UID.");
+        return;
+      }
+      addMessage("bot", "Fetching summary for UID "+uid+"...");
+      lookupResult.classList.remove("hidden");
+      lookupResult.textContent = "Loading...";
+
+      try{
+        const res = await fetch(`${API_BASE}/api/summary/student/${encodeURIComponent(uid)}`);
+        const data = await res.json();
+        if(!res.ok){
+          const msg = data.detail || "No student found.";
+          addMessage("bot", msg);
+          lookupResult.textContent = msg;
+          return;
+        }
+        lookupResult.innerHTML = renderStudentSummary(data);
+        addMessage("bot","Summary loaded in the Lookup Summary tab.");
+      }catch(e){
+        const msg = "Something went wrong while fetching the summary.";
+        addMessage("bot", msg);
+        lookupResult.textContent = msg;
+      }
+    }
+
+    function renderStudentSummary(s){
+      const risksHtml = (s.risk_flags && s.risk_flags.length)
+        ? `<ul class="list">${s.risk_flags.map(x=>`<li>${x}</li>`).join("")}</ul>`
+        : "<div>None detected.</div>";
+
+      const notes = (s.notes && s.notes.length)
+        ? s.notes.map(n=>`<li>${n}</li>`).join("")
+        : "<li>No notes recorded.</li>";
+
+      const actionsLines = (s.advisor_actions || "").split("\n").filter(line => line.trim() !== "");
+      const actionsHtml = actionsLines.length
+        ? `<ul class="list">${actionsLines.map(line=>`<li>${line.replace(/^- /,"")}</li>`).join("")}</ul>`
+        : "<div>No specific advisor actions generated.</div>";
+
+      const aiOverviewHtml = s.ai_overview
+        ? `<div class="divider"></div>
+           <div><strong>AI overview (for advisor)</strong><div>${s.ai_overview}</div></div>`
+        : "";
+
+      const aiOutlineHtml = s.ai_meeting_outline
+        ? `<div class="divider"></div>
+           <div><strong>AI meeting outline (25–30 mins)</strong>
+             <pre style="white-space:pre-wrap;margin:0;font-family:inherit;">${s.ai_meeting_outline}</pre>
+           </div>`
+        : "";
+
+      const aiErrorHtml = s.ai_error
+        ? `<div class="divider"></div>
+           <div class="muted" style="font-size:12px;">AI helper issue: ${s.ai_error}</div>`
+        : "";
+
+      return `
+        <div><strong>Student:</strong> ${s.name || "Student"} (UID: ${s.uid || ""})</div>
+        <div class="divider"></div>
+        <div><strong>Program:</strong> ${s.program || "-"}</div>
+        <div><strong>Level:</strong> ${s.level || "-"}</div>
+        <div><strong>Term:</strong> ${s.term || "-"}</div>
+        <div class="divider"></div>
+        <div><strong>Current GPA:</strong> ${s.gpa_current ?? "-"}</div>
+        <div><strong>Cumulative GPA:</strong> ${s.gpa_cumulative ?? "-"}</div>
+        <div><strong>Credits:</strong> ${s.credits_earned ?? "-"} / ${s.credits_required ?? "-"}</div>
+        <div class="divider"></div>
+        <div><strong>Risk flags</strong>${risksHtml}</div>
+        <div class="divider"></div>
+        <div><strong>Recommended advisor actions</strong>${actionsHtml}</div>
+        <div class="divider"></div>
+        <div><strong>Advising notes</strong></div>
+        <ul class="list">${notes}</ul>
+        ${aiOverviewHtml}
+        ${aiOutlineHtml}
+        ${aiErrorHtml}
+      `;
+    }
+
+    /* -------- ONBOARDING FORM -------- */
+    const onboardingContainer = document.getElementById("onboardingForm");
+    const onboardingResult = document.getElementById("onboardingResult");
+    const submitOnboarding = document.getElementById("submitOnboarding");
+
+    let onboardingLabels = [
+      "1) What is your full name?",
+      "2) What is your UID?",
+      "3) What program are you in? (e.g., MSIS, MBA, Plus 1)",
+      "4) Are you Undergraduate, Plus 1, or Graduate?",
+      "5) What term are you in / starting? (e.g., Fall 2025)",
+      "6) What are your short-term academic goals?",
+      "7) What kind of career are you aiming for?",
+      "8) Do you have prior internship or work experience? If yes, describe briefly.",
+      "9) What challenges do you anticipate academically or professionally?",
+      "10) Which student organizations, projects, or activities are you involved in or interested in?"
+    ];
+
+    function renderOnboardingForm(){
+      onboardingContainer.innerHTML = onboardingLabels.map((label, idx)=>`
+        <div class="form-row">
+          <label for="q${idx}">${label}</label>
+          <input type="text" id="q${idx}" />
+        </div>
+      `).join("");
+    }
+
+    async function loadOnboardingLabels(){
+      try{
+        const res = await fetch(`${API_BASE}/api/summary/onboarding_questions`);
+        const data = await res.json();
+        if(Array.isArray(data.questions) && data.questions.length){
+          onboardingLabels = data.questions.map((q,i)=>`${i+1}) ${q}`);
+        }
+      }catch(_e){}
+      renderOnboardingForm();
+    }
+    loadOnboardingLabels();
+
+    submitOnboarding.addEventListener("click", async ()=>{
+      const answers = onboardingLabels.map((_,i)=>document.getElementById("q"+i).value.trim());
+      if(!answers[0]){
+        alert("Please enter at least your name in question 1.");
+        return;
+      }
+      onboardingResult.classList.remove("hidden");
+      onboardingResult.textContent = "Generating your profile summary...";
+
+      try{
+        const res = await fetch(`${API_BASE}/api/summary/from_answers`,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({answers})
+        });
+        const data = await res.json();
+        if(!res.ok){
+          onboardingResult.textContent = data.detail || "Could not generate summary.";
+          return;
+        }
+        const s = data.summary;
+
+        const hasRisks = Array.isArray(s.risk_flags) && s.risk_flags.length > 0;
+        const risksSection = hasRisks
+          ? `
+            <div class="divider"></div>
+            <div><strong>Risk flags</strong>
+              <ul class="list">
+                ${s.risk_flags.map(x=>`<li>${x}</li>`).join("")}
+              </ul>
+            </div>
+          `
+          : "";
+
+        const aiOverviewSection = s.ai_overview
+          ? `
+            <div class="divider"></div>
+            <div><strong>AI overview (what your advisor might focus on)</strong>
+              <div>${s.ai_overview}</div>
+            </div>
+          `
+          : "";
+
+        const aiOutlineSection = s.ai_meeting_outline
+          ? `
+            <div class="divider"></div>
+            <div><strong>Suggested 25–30 minute meeting outline</strong>
+              <pre style="white-space:pre-wrap;margin:0;font-family:inherit;">${s.ai_meeting_outline}</pre>
+            </div>
+          `
+          : "";
+
+        const aiErrorSection = s.ai_error
+          ? `
+            <div class="divider"></div>
+            <div class="muted" style="font-size:12px;">AI helper issue: ${s.ai_error}</div>
+          `
+          : "";
+
+        onboardingResult.innerHTML = `
+          <div><strong>Here’s your profile summary${s.name ? ", "+s.name : ""}:</strong></div>
+          ${risksSection}
+          <div class="divider"></div>
+          <div><strong>Summary</strong><div>${s.summary_bullets}</div></div>
+          ${aiOverviewSection}
+          ${aiOutlineSection}
+          ${aiErrorSection}
+        `;
+      }catch(e){
+        onboardingResult.textContent = "Something went wrong.";
+      }
+    });
+
+    /* -------- ATS PAGE -------- */
+    let ATS_DOMAINS = [];
+    const atsDomain   = document.getElementById("atsDomain");
+    const atsRole     = document.getElementById("atsRole");
+    const resumeFile2 = document.getElementById("resumeFile2");
+    const atsAnalyzeBtn = document.getElementById("atsAnalyzeBtn");
+    const atsResult   = document.getElementById("atsResult");
+
+    async function loadAtsDomains(){
+      try{
+        const res = await fetch(`${API_BASE}/api/ats/domains`);
+        const data = await res.json();
+        ATS_DOMAINS = data.domains || [];
+      }catch(e){
+        ATS_DOMAINS = [];
+      }
+
+      if(!ATS_DOMAINS.length){
+        ATS_DOMAINS = [
+          { name:"Data & Analytics", roles:[{job_title:"Data Analyst"},{job_title:"Business Data Analyst"},{job_title:"Product Data Analyst"}] },
+          { name:"Product Management", roles:[{job_title:"Associate Product Manager"},{job_title:"Product Analyst"}] },
+          { name:"Software Engineering", roles:[{job_title:"Backend Engineer"},{job_title:"Full-Stack Engineer"}] },
+          { name:"Consulting / Strategy", roles:[{job_title:"Management Consultant (Analytics Focus)"},{job_title:"Business Strategy Analyst"}] },
+          { name:"Finance / Quant", roles:[{job_title:"Financial/Data Analyst"},{job_title:"Risk/Quant Analyst"}] }
+        ];
+      }
+
+      atsDomain.innerHTML = ATS_DOMAINS.map((d,i)=>`<option value="${i}">${d.name}</option>`).join("");
+      setAtsRoles(0);
+    }
+
+    function setAtsRoles(domainIndex){
+      const dom = ATS_DOMAINS[domainIndex] || { roles: [] };
+      const roles = dom.roles || [];
+      atsRole.innerHTML = roles.map((r,i)=>{
+        const label =
+          r.job_title || r.title || r.name || r.role || r.role_name ||
+          (typeof r === "string" ? r : String(r));
+        return `<option value="${i}">${label}</option>`;
+      }).join("");
+    }
+
+    atsDomain.addEventListener("change", e=>{
+      const idx = parseInt(e.target.value,10) || 0;
+      setAtsRoles(idx);
+    });
+
+    // --- ICS helpers ---
+    function triggerBlobDownload(blob, filename){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || "event.ics";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function downloadICSFromPayload(payload){
+      const res = await fetch(`${API_BASE}/api/events/ics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok){
+        alert("Could not generate calendar file.");
+        return;
+      }
+      const text = await res.text();
+      const blob = new Blob([text], { type: "text/calendar;charset=utf-8" });
+      triggerBlobDownload(blob, (payload.event_name || "event") + ".ics");
+    }
+
+    function renderEventCard(ev){
+      const title = ev.event_name || ev.name || "Event";
+      const dateLine = ev.date ? `<div><strong>Date:</strong> ${ev.date}</div>` : "";
+      const locLine  = ev.location ? `<div><strong>Location:</strong> ${ev.location}</div>` : "";
+      const linkLine = ev.link ? `<a class="link-btn" href="${ev.link}" target="_blank" rel="noopener noreferrer">View event</a>` : "";
+      const skills   = ev.skills_covered ? `<div class="muted" style="font-size:12px;">Skills: ${ev.skills_covered}</div>` : "";
+
+      let calendarBtn = "";
+      if(ev.calendar_ics_url){
+        calendarBtn = `<a class="link-btn primary" href="${API_BASE}${ev.calendar_ics_url}" download>➕ Add to Calendar (.ics)</a>`;
+      }else{
+        const payload = {
+          event_name: title,
+          description: ev.description || "",
+          location: ev.location || "",
+          link: ev.link || "",
+          date: ev.date || null
+        };
+        const encoded = encodeURIComponent(JSON.stringify(payload));
+        calendarBtn = `<button class="link-btn primary" onclick='downloadICSFromPayload(JSON.parse(decodeURIComponent("${encoded}")))'>➕ Add to Calendar (.ics)</button>`;
+      }
+
+      return `
+        <div class="event-card">
+          <div><strong>${title}</strong></div>
+          ${dateLine}
+          ${locLine}
+          ${skills}
+          <div class="event-actions">
+            ${calendarBtn}
+            ${linkLine || ""}
+          </div>
+        </div>
+      `;
+    }
+
+    atsAnalyzeBtn.addEventListener("click", async ()=>{
+      const file = resumeFile2.files[0];
+      if(!file){
+        atsResult.classList.remove("hidden");
+        atsResult.textContent = "Please choose a PDF resume first.";
+        return;
+      }
+      const domain_index = atsDomain.selectedIndex;
+      const role_index   = atsRole.selectedIndex;
+
+      atsResult.classList.remove("hidden");
+      atsResult.textContent = "Uploading résumé, running ATS + AI analysis...";
+
+      try{
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("domain_index", String(domain_index));
+        formData.append("role_index", String(role_index));
+        formData.append("use_llm", "true");
+
+        const res = await fetch(`${API_BASE}/api/ats/analyze_upload`,{ method:"POST", body: formData });
+        const data = await res.json();
+        if(!res.ok){
+          atsResult.textContent = data.detail || "ATS analysis failed.";
+          return;
+        }
+
+        const hf     = data.heuristic_feedback || {};
+        const scores = hf.scores || {};
+        const events = data.suggested_events || [];
+        const ai    = data.ai_insights || null;
+
+        let aiHtml = "";
+        if(ai){
+          aiHtml = `
+            <div class="divider"></div>
+            <div><strong>AI Overview</strong>
+              <div>${ai.overview || "No overview generated."}</div>
+            </div>
+            ${ai.strengths ? `
+              <div class="divider"></div>
+              <div><strong>Strengths</strong>
+                <pre style="white-space:pre-wrap;margin:0;font-family:inherit;">${ai.strengths}</pre>
+              </div>
+            ` : ""}
+            ${ai.weaknesses ? `
+              <div class="divider"></div>
+              <div><strong>Weaknesses</strong>
+                <pre style="white-space:pre-wrap;margin:0;font-family:inherit;">${ai.weaknesses}</pre>
+              </div>
+            ` : ""}
+            ${ai.recommended_next_steps ? `
+              <div class="divider"></div>
+              <div><strong>Recommended next steps</strong>
+                <pre style="white-space:pre-wrap;margin:0;font-family:inherit;">${ai.recommended_next_steps}</pre>
+              </div>
+            ` : ""}
+            ${ai.advisor_notes ? `
+              <div class="divider"></div>
+              <div><strong>Advisor notes</strong>
+                <pre style="white-space:pre-wrap;margin:0;font-family:inherit;">${ai.advisor_notes}</pre>
+              </div>
+            ` : ""}
+            ${ai.llm_error ? `
+              <div class="divider"></div>
+              <div class="muted" style="font-size:12px;">LLM issue: ${ai.llm_error}</div>
+            ` : ""}
+          `;
+        }
+
+        const scoresHtml = Object.keys(scores).length ? `
+          <div class="divider"></div>
+          <div><strong>Scores</strong>
+            <ul class="list">
+              ${Object.entries(scores).map(([k,v])=>`<li>${k}: ${v}</li>`).join("")}
+            </ul>
+          </div>` : "";
+
+        const eventsHtml = events.length ? `
+          <div class="divider"></div>
+          <div><strong>Recommended events</strong>
+            ${events.map(renderEventCard).join("")}
+          </div>` : `<div class="divider"></div><div><em>No specific events recommended.</em></div>`;
+
+        atsResult.innerHTML = `
+          <div><strong>Domain:</strong> ${data.domain || (ATS_DOMAINS[domain_index] && ATS_DOMAINS[domain_index].name) || ""}</div>
+          <div><strong>Role index:</strong> ${data.role_index ?? role_index}</div>
+          <div class="divider"></div>
+          <div><strong>ATS Summary</strong><div>${hf.summary || "No summary available."}</div></div>
+          ${scoresHtml}
+          ${eventsHtml}
+          ${aiHtml}
+        `;
+      }catch(e){
+        atsResult.textContent = "Something went wrong during ATS analysis.";
+      }
+    });
+
+    loadAtsDomains();
+
+    /* -------- META CHIP -------- */
+    const metaChip = document.getElementById("metaChip");
+    async function loadMeta(){
+      try{
+        const res = await fetch(`${API_BASE}/api/meta`);
+        const data = await res.json();
+        if(res.ok){
+          metaChip.textContent = (data.app || "Backend") + " " + (data.version || "");
+        }else{
+          metaChip.textContent = "Backend offline";
+        }
+      }catch(e){
+        metaChip.textContent = "Backend offline";
+      }
+    }
+    loadMeta();
+
+    addMessage("bot","Hi, I’m STARK. Pick a mode (Advisor/Student) on the left to get started.");
+  </script>
+</body>
+</html>

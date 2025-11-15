@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STARK – Login + App (Single File)</title>
+  <style>
+    :root{
+      --bg:#fdf9f6; --panel:#ffffff; --muted:#f2d7d5; --header:#ffe7e0; --chip:#ffb6a6; --primary:#ff7f6a; --text:#4a3332;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);}
+    /* ----- Shared UI ----- */
+    .card{background:var(--panel);border:1px solid var(--muted);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.08)}
+    .pill{background:#fff;border:1px solid var(--muted);padding:4px 10px;border-radius:999px;font-size:11px}
+    .btn{padding:10px 14px;border-radius:999px;border:none;background:var(--primary);color:#fff;font-weight:600;cursor:pointer}
+    .chip{background:#fff;border:1px solid var(--muted);padding:4px 10px;border-radius:999px;font-size:12px}
+    .hidden{display:none !important}
+    /* ----- Login Screen ----- */
+    #screen-login{min-height:100vh;display:grid;place-items:center;padding:24px}
+    .login-card{width:min(430px,92vw);overflow:hidden}
+    .login-header{padding:16px 18px;background:var(--header);border-bottom:1px solid var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .login-body{padding:18px}
+    .brand{font-weight:700;font-size:15px}
+    .title{font-size:22px;margin:0 0 8px}
+    .subtitle{font-size:13px;opacity:.8;margin:0 0 18px}
+    label{font-size:12px;display:block;margin:12px 0 6px 8px}
+    input,textarea,select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--muted);background:#fff;font-size:14px}
+    .login-actions{margin-top:16px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .link{font-size:12px;color:#a3544a;text-decoration:underline;cursor:pointer}
+    .error{margin-top:10px;font-size:12px;color:#b00020;display:none}
+    /* ----- App Screen ----- */
+    #screen-app{height:100vh;display:flex}
+    .sidebar{width:240px;background:#fff;border-right:1px solid var(--muted);display:flex;flex-direction:column}
+    .side-header{padding:14px 16px;background:var(--header);border-bottom:1px solid var(--muted);font-weight:700}
+    .nav{padding:8px}
+    .nav button{width:100%;text-align:left;padding:10px 12px;margin:4px 0;border-radius:12px;border:1px solid var(--muted);background:#fff;cursor:pointer;font-size:14px}
+    .nav button.active{background:var(--chip);color:#fff;border-color:var(--chip)}
+    .spacer{flex:1}
+    .logout{margin:8px}
+    .content{flex:1;display:flex;flex-direction:column;height:100vh}
+    .topbar{padding:10px 14px;background:#fff;border-bottom:1px solid var(--muted);display:flex;align-items:center;gap:8px;justify-content:space-between}
+    .main{padding:16px;overflow:auto;flex:1}
+    .section{padding:16px;margin-bottom:16px}
+    .grid{display:grid;gap:12px}
+    .row{display:flex;gap:10px;align-items:center}
+    .chat-box{height:420px;overflow:auto;border:1px solid var(--muted);border-radius:12px;padding:10px;background:#fff}
+    .bubble{display:inline-block;padding:8px 10px;border-radius:12px;margin:6px 0;white-space:pre-wrap;max-width:75%}
+    .b-bot{background:var(--header)}
+    .b-user{background:var(--chip);color:#fff;float:right}
+    .divider{margin:10px 0;border-top:1px solid var(--muted)}
+    .list{padding-left:18px;margin:6px 0}
+  </style>
+</head>
+<body>
+  <!-- LOGIN SCREEN -->
+  <section id="screen-login">
+    <div class="card login-card">
+      <div class="login-header">
+        <div class="brand">STARK – Advisor & Student Assistant</div>
+        <div class="pill">Secure Login</div>
+      </div>
+      <div class="login-body">
+        <h1 class="title">Welcome back</h1>
+        <p class="subtitle">Use your UID and password to sign in.</p>
+        <label for="uid">UID</label>
+        <input id="uid" type="text" placeholder="e.g., 122303065" autocomplete="username" />
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <div class="login-actions">
+          <button id="loginBtn" class="btn">Sign in</button>
+          <span class="link" id="forgot">Forgot password?</span>
+        </div>
+        <div id="error" class="error">Invalid credentials. Try UID "demo" and password "demo".</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP SCREEN (functionality page) -->
+  <section id="screen-app" class="hidden">
+    <aside class="sidebar">
+      <div class="side-header">STARK Agent</div>
+      <div class="nav">
+        <button data-tab="chat" class="active">Chat</button>
+        <button data-tab="onboarding">Onboarding Form</button>
+        <button data-tab="lookup">Lookup Summary</button>
+        <button data-tab="resume">Resume Check</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn logout" id="logoutBtn">Log out</button>
+    </aside>
+
+    <section class="content">
+      <div class="topbar">
+        <div class="row">
+          <span class="chip" id="who"></span>
+        </div>
+        <div class="row" style="gap:6px">
+          <span class="chip">Advisor & Student Assistant</span>
+          <span class="chip" id="metaChip"></span>
+        </div>
+      </div>
+
+      <main class="main">
+        <!-- CHAT -->
+        <div id="tab-chat" class="card section">
+          <h3>Chat</h3>
+          <div id="chatWindow" class="chat-box"></div>
+          <div class="row" style="margin-top:10px">
+            <input id="chatInput" placeholder="Type here..." />
+            <button class="btn" id="chatSend">Send</button>
+          </div>
+        </div>
+
+        <!-- ONBOARDING -->
+        <div id="tab-onboarding" class="card section hidden">
+          <h3>Onboarding Form</h3>
+          <div class="grid">
+            <div><label id="label_q1" for="q1">1) What is your full name?</label><input id="q1"/></div>
+            <div><label id="label_q2" for="q2">2) What is your UID?</label><input id="q2"/></div>
+            <div><label id="label_q3" for="q3">3) What program are you in? (e.g., MSIS, MSBA, MBA, Plus 1)</label><input id="q3"/></div>
+            <div><label id="label_q4" for="q4">4) Are you Undergraduate, Plus 1, or Graduate?</label><input id="q4"/></div>
+            <div><label id="label_q5" for="q5">5) What term are you in / starting? (e.g., Fall 2025)</label><input id="q5"/></div>
+            <div><label id="label_q6" for="q6">6) What are your short-term academic goals?</label><textarea id="q6"></textarea></div>
+            <div><label id="label_q7" for="q7">7) What kind of career are you aiming for?</label><input id="q7"/></div>
+            <div><label id="label_q8" for="q8">8) Prior internships or work experience? Briefly.</label><textarea id="q8"></textarea></div>
+            <div><label id="label_q9" for="q9">9) What challenges do you anticipate academically or professionally?</label><textarea id="q9"></textarea></div>
+            <div><label id="label_q10" for="q10">10) Student orgs / projects / activities you are in or interested in?</label><textarea id="q10"></textarea></div>
+          </div>
+          <div style="margin-top:12px"><button class="btn" id="submitOnboarding">Submit Onboarding</button></div>
+          <div id="onboardingToast" class="chip" style="display:none;margin-top:10px">Saved ✓ (locally)</div>
+        </div>
+
+        <!-- LOOKUP -->
+        <div id="tab-lookup" class="card section hidden">
+          <h3>Lookup Summary</h3>
+          <div class="row">
+            <input id="lookupUid" placeholder="Enter UID (e.g., 122303065)" />
+            <button class="btn" id="lookupBtn">Fetch</button>
+          </div>
+          <div id="lookupResult" style="margin-top:12px"></div>
+        </div>
+
+        <!-- RESUME -->
+        <div id="tab-resume" class="card section hidden">
+          <h3>Resume Check (ATS)</h3>
+          <div class="row">
+            <select id="domain"></select>
+            <select id="role"></select>
+          </div>
+          <div class="row" style="margin-top:10px;font-size:12px">
+            <span>ATS résumé (PDF):</span>
+            <input type="file" id="resumeFile" accept="application/pdf" />
+            <button class="btn" id="analyzeBtn">Upload & Analyze</button>
+          </div>
+          <div id="atsOut" style="margin-top:12px"></div>
+        </div>
+      </main>
+    </section>
+  </section>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+    let STUDENT_ID = null;
+
+    // ---- Login logic (SPA) ----
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('error');
+
+    function authenticate(uid, pwd){
+      // still mock auth (backend guide doesn't define auth endpoints)
+      return (uid && pwd) && ((uid==='demo' && pwd==='demo') || (uid.length>=3 && pwd.length>=3));
+    }
+
+    function show(id, on){
+      document.getElementById(id).classList.toggle('hidden', !on);
+    }
+
+    function enterApp(uid){
+      STUDENT_ID = uid;
+      localStorage.setItem('stark_session','ok');
+      localStorage.setItem('stark_uid', uid);
+      document.getElementById('who').textContent = 'Signed in as: ' + uid;
+      show('screen-login', false);
+      show('screen-app', true);
+      showTab('chat');
+      loadMeta();
+    }
+
+    loginBtn.addEventListener('click', ()=>{
+      const uid = document.getElementById('uid').value.trim();
+      const pwd = document.getElementById('password').value;
+      if(authenticate(uid, pwd)){
+        loginError.style.display='none';
+        enterApp(uid);
+      } else {
+        loginError.style.display='block';
+      }
+    });
+
+    document.addEventListener('keydown', e=>{
+      if(e.key==='Enter' && !document.getElementById('screen-login').classList.contains('hidden')){
+        loginBtn.click();
+      }
+    });
+
+    // Rehydrate session
+    (function(){
+      const ok = localStorage.getItem('stark_session')==='ok';
+      const uid = localStorage.getItem('stark_uid');
+      if(ok && uid){
+        STUDENT_ID = uid;
+        document.getElementById('who').textContent = 'Signed in as: ' + uid;
+        show('screen-login', false);
+        show('screen-app', true);
+        showTab('chat');
+        loadMeta();
+      }
+    })();
+
+    // ---- Tabs ----
+    const navButtons = document.querySelectorAll('.nav button');
+    function showTab(id){
+      document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));
+      document.getElementById('tab-'+id).classList.remove('hidden');
+      navButtons.forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+    }
+    navButtons.forEach(btn=>btn.addEventListener('click', ()=>showTab(btn.dataset.tab)));
+    showTab('chat');
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{
+      localStorage.removeItem('stark_session');
+      localStorage.removeItem('stark_uid');
+      STUDENT_ID = null;
+      show('screen-app', false);
+      show('screen-login', true);
+    });
+
+    // ---- Chat (FAQ backend) ----
+    const chatWindow = document.getElementById('chatWindow');
+    const chatInput = document.getElementById('chatInput');
+    const chatSend = document.getElementById('chatSend');
+
+    function addBubble(who, text){
+      const b = document.createElement('div');
+      b.className = 'bubble ' + (who==='bot' ? 'b-bot' : 'b-user');
+      b.textContent = text;
+      const row = document.createElement('div');
+      row.appendChild(b);
+      chatWindow.appendChild(row);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    async function handleChat(question){
+      if(!question) return;
+      addBubble('user', question);
+      const thinkingText = "Let me check that for you...";
+      addBubble('bot', thinkingText);
+
+      try{
+        const res = await fetch(`${API_BASE}/api/faq/ask`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            student_id: STUDENT_ID || "guest",
+            question,
+            use_llm: false
+          })
+        });
+        const data = await res.json();
+        const answer = res.ok
+          ? (data.answer || "I couldn't find anything helpful.")
+          : (data.detail || "I couldn't answer that right now.");
+        addBubble('bot', answer);
+      }catch(e){
+        addBubble('bot', "Something went wrong while contacting the FAQ backend.");
+      }
+    }
+
+    addBubble('bot',"Hi, I'm STARK. Ask me anything or use the sidebar.");
+
+    chatSend.addEventListener('click', ()=>{
+      const text = chatInput.value.trim();
+      if(!text) return;
+      chatInput.value = "";
+      handleChat(text);
+    });
+
+    chatInput.addEventListener('keydown', e=>{
+      if(e.key==='Enter') chatSend.click();
+    });
+
+    // ---- Onboarding (questions from backend, answers stored locally) ----
+    const onboardingToast = document.getElementById('onboardingToast');
+
+    document.getElementById('submitOnboarding').addEventListener('click', ()=>{
+      const payload = {};
+      for(let i=1;i<=10;i++){
+        const el = document.getElementById('q'+i);
+        payload['q'+i] = el ? el.value : '';
+      }
+      const uid = STUDENT_ID || localStorage.getItem('stark_uid') || 'guest';
+      localStorage.setItem('stark_onboarding_'+uid, JSON.stringify(payload));
+      onboardingToast.style.display='inline-block';
+      setTimeout(()=>onboardingToast.style.display='none',1500);
+    });
+
+    async function loadOnboardingQuestions(){
+      try{
+        const res = await fetch(`${API_BASE}/api/summary/onboarding_questions`);
+        if(!res.ok) return;
+        const data = await res.json();
+        const questions = data.questions || [];
+        questions.slice(0,10).forEach((q, idx)=>{
+          const label = document.getElementById('label_q'+(idx+1));
+          if(label) label.textContent = (idx+1)+") "+q;
+        });
+      }catch(e){
+        // keep default labels if backend not available
+      }
+    }
+
+    // ---- Lookup Summary (advisor view) ----
+    document.getElementById('lookupBtn').addEventListener('click', async ()=>{
+      const uid = document.getElementById('lookupUid').value.trim();
+      const out = document.getElementById('lookupResult');
+      if(!uid){
+        out.textContent = 'Please enter a UID first.';
+        return;
+      }
+      out.textContent = 'Loading summary...';
+      try{
+        const res = await fetch(`${API_BASE}/api/summary/student/${encodeURIComponent(uid)}`);
+        const data = await res.json();
+        if(!res.ok){
+          out.textContent = data.detail || 'No summary found for UID '+uid+'.';
+          return;
+        }
+        out.innerHTML = renderStudentSummary(data);
+      }catch(e){
+        out.textContent = 'Something went wrong while fetching the summary.';
+      }
+    });
+
+    function renderStudentSummary(s){
+      // StudentSummaryOut per guide
+      const risk = (s.risk_flags && s.risk_flags.length)
+        ? s.risk_flags.join(", ")
+        : "None";
+      const notes = (s.notes && s.notes.length)
+        ? s.notes.map(n=>`<li>${n}</li>`).join("")
+        : "<li>No notes recorded.</li>";
+
+      return `
+        <div class="card section" style="margin-top:10px">
+          <b>${s.name || "Student"} (${s.uid || ""})</b>
+          <div class="divider"></div>
+          <div><b>Program:</b> ${s.program || "-"}</div>
+          <div><b>Level:</b> ${s.level || "-"}</div>
+          <div><b>Term:</b> ${s.term || "-"}</div>
+          <div class="divider"></div>
+          <div><b>GPA (current):</b> ${s.gpa_current ?? "-"}</div>
+          <div><b>GPA (cumulative):</b> ${s.gpa_cumulative ?? "-"}</div>
+          <div><b>Credits:</b> ${s.credits_earned ?? "-"} / ${s.credits_required ?? "-"}</div>
+          <div class="divider"></div>
+          <div><b>Risk flags:</b> ${risk}</div>
+          <div class="divider"></div>
+          <div><b>Advising notes</b></div>
+          <ul class="list">${notes}</ul>
+        </div>
+      `;
+    }
+
+    // ---- ATS (Resume Analyzer) ----
+    let ATS_DOMAINS = [];
+    const domainSelect = document.getElementById('domain');
+    const roleSelect = document.getElementById('role');
+    const resumeFileInput = document.getElementById('resumeFile');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const atsOut = document.getElementById('atsOut');
+
+    async function loadAtsDomains(){
+      try{
+        const res = await fetch(`${API_BASE}/api/ats/domains`);
+        const data = await res.json();
+        ATS_DOMAINS = (data.domains || []);
+      }catch(e){
+        ATS_DOMAINS = [];
+      }
+
+      if(!ATS_DOMAINS.length){
+        // fallback static options if backend fails
+        ATS_DOMAINS = [
+          { name:"Data & Analytics", roles:[{job_title:"Data Analyst"},{job_title:"Business Data Analyst"},{job_title:"Product Data Analyst"}] },
+          { name:"Product Management", roles:[{job_title:"Associate Product Manager"},{job_title:"Product Analyst"}] },
+          { name:"Software Engineering", roles:[{job_title:"Backend Engineer"},{job_title:"Full-Stack Engineer"}] },
+          { name:"Consulting / Strategy", roles:[{job_title:"Management Consultant (Analytics Focus)"},{job_title:"Business Strategy Analyst"}] },
+          { name:"Finance / Quant", roles:[{job_title:"Financial/Data Analyst"},{job_title:"Risk/Quant Analyst"}] }
+        ];
+      }
+
+      domainSelect.innerHTML = ATS_DOMAINS
+        .map((d,i)=>`<option value="${i}">${d.name}</option>`)
+        .join("");
+      setRolesForDomain(0);
+    }
+
+    function setRolesForDomain(domainIndex){
+      const dom = ATS_DOMAINS[domainIndex] || {roles:[]};
+      const roles = dom.roles || [];
+      roleSelect.innerHTML = roles
+        .map((r,i)=>`<option value="${i}">${r.job_title || String(r)}</option>`)
+        .join("");
+    }
+
+    domainSelect.addEventListener('change', e=>{
+      const idx = parseInt(e.target.value,10) || 0;
+      setRolesForDomain(idx);
+    });
+
+    analyzeBtn.addEventListener('click', async ()=>{
+      const file = resumeFileInput.files[0];
+      if(!file){
+        atsOut.textContent = 'Please choose a PDF file first.';
+        return;
+      }
+      const domain_index = domainSelect.selectedIndex;
+      const role_index = roleSelect.selectedIndex;
+
+      atsOut.innerHTML = '<span class="chip">Uploading and running ATS analysis…</span>';
+
+      try{
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("domain_index", String(domain_index));
+        formData.append("role_index", String(role_index));
+        formData.append("use_llm", "false");
+
+        const res = await fetch(`${API_BASE}/api/ats/analyze_upload`, {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if(!res.ok){
+          atsOut.textContent = data.detail || 'ATS analysis failed.';
+          return;
+        }
+
+        const hf = data.heuristic_feedback || {};
+        const scores = hf.scores || {};
+        const events = data.suggested_events || [];
+
+        atsOut.innerHTML = `
+          <div class="card section">
+            <div><strong>Domain:</strong> ${data.domain || (ATS_DOMAINS[domain_index] && ATS_DOMAINS[domain_index].name) || ""}</div>
+            <div><strong>Role index:</strong> ${data.role_index ?? role_index}</div>
+            <div class="divider"></div>
+            <div><strong>ATS Summary</strong><div>${hf.summary || "No summary available."}</div></div>
+            ${Object.keys(scores).length ? `
+              <div class="divider"></div>
+              <div><strong>Scores</strong>
+                <ul class="list">
+                  ${Object.entries(scores).map(([k,v])=>`<li>${k}: ${v}</li>`).join("")}
+                </ul>
+              </div>
+            ` : ""}
+            <div class="divider"></div>
+            ${events.length ? `
+              <div><strong>Recommended events</strong>
+                <ul class="list">
+                  ${events.map(ev => `<li>${ev.name || "Event"}${ev.tags ? " (tags: " + ev.tags.join(", ") + ")" : ""}</li>`).join("")}
+                </ul>
+              </div>
+            ` : "<div><em>No specific events recommended.</em></div>"}
+          </div>
+        `;
+      }catch(e){
+        atsOut.textContent = 'Something went wrong during ATS analysis.';
+      }
+    });
+
+    // ---- Meta badge ----
+    async function loadMeta(){
+      try{
+        const res = await fetch(`${API_BASE}/api/meta`);
+        const data = await res.json();
+        if(res.ok){
+          const chip = document.getElementById('metaChip');
+          if(chip) chip.textContent = (data.app || 'Backend') + ' ' + (data.version || '');
+        }
+      }catch(e){
+        // ignore if meta fails
+      }
+    }
+
+    // ---- Kick off initial loads ----
+    loadOnboardingQuestions();
+    loadAtsDomains();
+  </script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>STARK – AI Persona Portal (ES5-compatible)</title>
+  <style>
+    :root{ --bg:#fdf9f6;--peach:#ffe7e0;--ink:#4a3332;--border:#f2d7d5;--purple:#7b61ff;--magenta:#d63384;--accent:#ff7f6a;--good:#0a7f49;--warn:#b86b00;--bad:#b00020;--muted:#7a6664;--card:#ffffff }
+    *{box-sizing:border-box}
+    body{min-height:100vh;display:grid;place-items:center;margin:0;color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background: radial-gradient(1200px 600px at 20% 20%, rgba(255,231,224,.9), transparent 60%), radial-gradient(1200px 800px at 80% 80%, rgba(255,231,224,.9), transparent 60%), linear-gradient(135deg,#ffe7e0 0%,#fdf9f6 35%,#ffe7e0 100%);} 
+    .shell{width:min(1050px,94vw);margin:32px auto}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.08)}
+    .pad{padding:22px}
+    .hpad{padding:14px 18px}
+    .grid{display:grid;gap:14px}
+    .grid.cols-2{grid-template-columns:1fr 1fr}
+    .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+    @media (max-width:900px){.grid.cols-3{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){.grid.cols-2,.grid.cols-3{grid-template-columns:1fr}}
+    h1{margin:0 0 12px;font-size:30px;font-weight:800;background:linear-gradient(90deg,var(--purple),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+    h2{margin:0 0 8px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px}
+    label{display:block;font-weight:600;margin:12px 0 6px}
+    .input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);outline:none}
+    .input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(123,97,255,.12)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;padding:12px 14px;border:0;border-radius:999px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+    .btn.secondary{background:#eee;color:#333;border:1px solid var(--border)}
+    .btn.small{border-radius:10px;width:auto;margin:0;padding:8px 12px}
+    .row{display:flex;gap:10px;align-items:center}
+    .right{margin-left:auto}
+    .alert{display:none;border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13px}
+    .alert.show{display:block}
+    .alert.error{background:#ffe7e7;color:var(--bad);border:1px solid #ffc5c5}
+    .alert.ok{background:#e9f8f0;color:var(--good);border:1px solid #c5eedc}
+    .topbar{display:flex;align-items:center;gap:12px}
+    .badge{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:#fff}
+    .tile{padding:16px;border-radius:14px;border:1px dashed var(--border);background:#fff;transition:transform .08s ease}
+    .tile:hover{transform:translateY(-1px)}
+    .kpi{font-weight:800;font-size:22px}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:14px}
+    th{background:#fffefc;text-align:left}
+    tr:hover td{background:#fffaf7}
+    [data-view]{display:none}
+    [data-view].show{display:block}
+    .foot{margin-top:12px;text-align:center;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- LOGIN CARD -->
+    <section id="view-login" data-view class="card pad show" aria-label="Login">
+      <div class="topbar">
+        <h1>STARK Login</h1>
+        <span class="badge">AI Persona Portal</span>
+        <span class="right sub">Advisor ↔ Student modes</span>
+      </div>
+      <form id="loginForm" autocomplete="on" style="margin-top:8px">
+        <label for="email">Email</label>
+        <input id="email" class="input" name="email" type="email" placeholder="e.g. student1@umd.edu" required />
+        <label for="password">Password</label>
+        <input id="password" class="input" name="password" type="password" placeholder="••••••••" required />
+        <div id="loginAlert" class="alert error" role="alert" aria-live="polite"></div>
+        <div class="row">
+          <button id="btnLogin" class="btn" type="submit">Log in</button>
+          <button id="btnMock" class="btn secondary" type="button" title="If backend is offline, use seeded data">Mock mode</button>
+        </div>
+        <p class="foot">Demo accounts: student1@umd.edu / student123, advisor1@umd.edu / advisor123 — 2FA code: <b>123456</b> (universal demo)</p>
+      </form>
+    </section>
+
+    <!-- 2FA STEP (prototype) -->
+    <section id="view-2fa" data-view class="card pad" aria-label="Two-factor authentication">
+      <div class="topbar">
+        <h1>Verify it's you</h1>
+        <span class="badge">2-step sign in</span>
+        <button class="btn small right" id="backToLogin" type="button">Back</button>
+      </div>
+      <p class="sub" id="otpIntro" style="margin-top:8px">We sent a 6‑digit code to <b id="otpWhere"></b>. Enter it below to continue.</p>
+      <form id="form2fa" style="margin-top:8px">
+        <label for="otpInput">One-time code</label>
+        <input id="otpInput" class="input" inputmode="numeric" maxlength="6" placeholder="123456" required />
+        <div id="otpAlert" class="alert error" role="alert"></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" type="submit">Verify</button>
+          <button class="btn secondary" id="resendOtp" type="button">Resend code</button>
+        </div>
+        <p class="foot" id="otpDebug" style="margin-top:8px">Tip: You can also use universal demo code <b>123456</b>.</p>
+      </form>
+    </section>
+
+    <!-- STUDENT DASHBOARD -->
+    <section id="view-student" data-view class="card pad" aria-label="Student dashboard">
+      <div class="topbar">
+        <h1>Student Home</h1>
+        <span id="studentName" class="badge"></span>
+        <span class="badge">Role: Student</span>
+        <button class="btn small right" id="logoutStudent">Log out</button>
+      </div>
+      <div class="grid cols-3" style="margin-top:14px">
+        <div class="tile">
+          <h2>Advisor Chat</h2>
+          <p class="sub">Ask anything about courses, deadlines, and careers.</p>
+          <div class="row"><span class="kpi" id="kpiMsgCount">—</span><span class="sub"> messages this week</span></div>
+        </div>
+        <div class="tile">
+          <h2>Resume Analyzer</h2>
+          <p class="sub">Upload your resume and get ATS-style feedback.</p>
+          <button class="btn small" id="btnResume">Open</button>
+        </div>
+        <div class="tile">
+          <h2>Upcoming Events</h2>
+          <ul id="studentEvents" class="sub" style="padding-left:18px;margin:6px 0"></ul>
+        </div>
+      </div>
+      <div class="grid cols-2" style="margin-top:14px">
+        <div class="tile">
+          <h2>Recommended Courses</h2>
+          <table id="tblRecs"><thead><tr><th>Course</th><th>Reason</th><th>Seats</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="tile">
+          <h2>Tasks</h2>
+          <table id="tblTasks"><thead><tr><th>Task</th><th>Due</th><th>Status</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADVISOR DASHBOARD -->
+    <section id="view-advisor" data-view class="card pad" aria-label="Advisor dashboard">
+      <div class="topbar">
+        <h1>Advisor Console</h1>
+        <span id="advisorName" class="badge"></span>
+        <span class="badge">Role: Advisor</span>
+        <button class="btn small right" id="logoutAdvisor">Log out</button>
+      </div>
+      <div class="grid cols-3" style="margin-top:14px">
+        <div class="tile">
+          <h2>Today</h2>
+          <div class="row"><span class="kpi" id="kpiAppts">—</span><span class="sub"> appointments</span></div>
+          <div class="row"><span class="kpi" id="kpiFlags">—</span><span class="sub"> student flags</span></div>
+        </div>
+        <div class="tile">
+          <h2>Quick Actions</h2>
+          <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px">
+            <button class="btn small" id="btnBroadcast">Send Broadcast</button>
+            <button class="btn small" id="btnNewNote">New Note</button>
+            <button class="btn small" id="btnExport">Export CSV</button>
+          </div>
+        </div>
+        <div class="tile">
+          <h2>Filters</h2>
+          <div class="row">
+            <input id="filterQuery" class="input" placeholder="Search students..." />
+            <button class="btn small" id="btnFilter">Search</button>
+          </div>
+        </div>
+      </div>
+      <div class="tile" style="margin-top:14px">
+        <h2>Advisee List</h2>
+        <table id="tblAdvisees">
+          <thead><tr><th>Name</th><th>Email</th><th>Major</th><th>Risk</th><th>GPA</th><th>Last Contact</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="grid cols-2" style="margin-top:14px">
+        <div class="tile">
+          <h2>Recent Conversations</h2>
+          <table id="tblConvos"><thead><tr><th>Student</th><th>Snippet</th><th>Time</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="tile">
+          <h2>Notes</h2>
+          <table id="tblNotes"><thead><tr><th>Student</th><th>Note</th><th>Time</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <p class="foot">Prototype — connects to /api/auth/login. If backend is offline, use Mock mode.</p>
+  </div>
+
+  <script>
+  // ===================== ES5 UTILITIES =====================
+  function qs(sel){ return document.querySelector(sel); }
+  function qsa(sel){ return document.querySelectorAll(sel); }
+  function addClass(el, cls){ if(!el) return; if(el.classList){ el.classList.add(cls); } else { el.className += ' '+cls; } }
+  function removeClass(el, cls){ if(!el) return; if(el.classList){ el.classList.remove(cls); } else { el.className = el.className.replace(new RegExp('\\b'+cls+'\\b','g'),''); } }
+  function showView(id){ var views=qsa('[data-view]'); for(var i=0;i<views.length;i++){ removeClass(views[i],'show'); } addClass(qs(id),'show'); }
+  function setText(sel, text){ var el=qs(sel); if(el){ el.textContent = text; } }
+
+  // Parse ?api=... without URL/URLSearchParams
+  function getQueryParam(name){
+    var search = window.location.search || '';
+    var pairs = search.replace(/^\?/, '').split('&');
+    for(var i=0;i<pairs.length;i++){
+      var kv = pairs[i].split('=');
+      if(kv[0] === name){ return decodeURIComponent(kv[1] || ''); }
+    }
+    return '';
+  }
+
+  // ===================== MOCK DATA =====================
+  var MOCK_USERS = [
+    { email:'student1@umd.edu', password:'student123', full_name:'Student One', role:'student' },
+    { email:'student2@umd.edu', password:'student123', full_name:'Student Two', role:'student' },
+    { email:'advisor1@umd.edu', password:'advisor123', full_name:'Advisor One', role:'advisor' },
+    { email:'advisor2@umd.edu', password:'advisor123', full_name:'Advisor Two', role:'advisor' }
+  ];
+
+  var MOCK_STUDENT_DATA = {
+    messagesThisWeek: 7,
+    events:[
+      { title:'Career Fair – Tech & Data', when:'Nov 15', location:'Armory Hall' },
+      { title:'SAS Macro Workshop (Adv)', when:'Nov 17', location:'IRB 2203' },
+      { title:'Internship Panel', when:'Nov 20', location:'Virtual' }
+    ],
+    recs:[
+      { course:'STAT 705 – SAS Programming', reason:'aligns with your SAS interview prep', seats: 8 },
+      { course:'INST 447 – Data Visualization', reason:'portfolio project-ready', seats: 3 },
+      { course:'CMSC 320 – Data Science', reason:'fills core requirement', seats: 12 }
+    ],
+    tasks:[
+      { task:'Meet advisor to finalize Spring plan', due:'Nov 18', status:'Open' },
+      { task:'Upload resume for review', due:'Nov 16', status:'In progress' },
+      { task:'Register for 15 credits', due:'Nov 25', status:'Blocked – waitlist' }
+    ]
+  };
+
+  var MOCK_ADVISEES = [
+    { name:'Alex Kim', email:'akim@umd.edu', major:'CS', risk:'Low', gpa:3.7, last:'Nov 10' },
+    { name:'Priya Shah', email:'pshah@umd.edu', major:'Info Sci', risk:'Medium', gpa:3.2, last:'Nov 09' },
+    { name:'Diego Ramirez', email:'dramirez@umd.edu', major:'DS', risk:'High', gpa:2.4, last:'Nov 08' },
+    { name:'Hannah Lee', email:'hlee@umd.edu', major:'Math', risk:'Low', gpa:3.9, last:'Nov 11' },
+    { name:'Marcus Brown', email:'mbrown@umd.edu', major:'Stats', risk:'Medium', gpa:3.0, last:'Nov 03' },
+    { name:'Jia Chen', email:'jchen@umd.edu', major:'CS', risk:'Low', gpa:3.6, last:'Nov 06' },
+    { name:'Sara Ali', email:'sali@umd.edu', major:'DS', risk:'High', gpa:2.3, last:'Nov 02' }
+  ];
+
+  var MOCK_CONVOS = [
+    { student:'Alex Kim', text:'Can I overload to 21 credits?', time:'09:42' },
+    { student:'Diego Ramirez', text:'Struggling with CMSC 216 — resources?', time:'08:15' },
+    { student:'Priya Shah', text:'Switching track to DS — impact?', time:'Yesterday' }
+  ];
+
+  var MOCK_NOTES = [
+    { student:'Diego Ramirez', note:'Refer to tutoring; schedule check-in next week.', time:'Today' },
+    { student:'Priya Shah', note:'Eligible for honors advising.', time:'Nov 08' }
+  ];
+
+  // ===================== RENDER HELPERS =====================
+  function fillStudent(data){
+    setText('#kpiMsgCount', data.messagesThisWeek);
+    var ev = qs('#studentEvents'); ev.innerHTML='';
+    for(var i=0;i<data.events.length;i++){
+      var e = data.events[i];
+      var li=document.createElement('li');
+      li.textContent = e.when + ' — ' + e.title + ' @ ' + e.location;
+      ev.appendChild(li);
+    }
+    var recBody=qs('#tblRecs tbody'); recBody.innerHTML='';
+    for(i=0;i<data.recs.length;i++){
+      var r=data.recs[i];
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td>'+r.course+'</td><td>'+r.reason+'</td><td>'+r.seats+'</td>';
+      recBody.appendChild(tr);
+    }
+    var tBody=qs('#tblTasks tbody'); tBody.innerHTML='';
+    for(i=0;i<data.tasks.length;i++){
+      var t=data.tasks[i];
+      var tr2=document.createElement('tr');
+      tr2.innerHTML='<td>'+t.task+'</td><td>'+t.due+'</td><td>'+t.status+'</td>';
+      tBody.appendChild(tr2);
+    }
+  }
+
+  function fillAdvisor(){
+    setText('#kpiAppts', '5');
+    var nonLow = 0; for(var i=0;i<MOCK_ADVISEES.length;i++){ if(MOCK_ADVISEES[i].risk !== 'Low') nonLow++; }
+    setText('#kpiFlags', String(nonLow));
+    var aBody=qs('#tblAdvisees tbody'); aBody.innerHTML='';
+    for(i=0;i<MOCK_ADVISEES.length;i++){
+      var a=MOCK_ADVISEES[i];
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td>'+a.name+'</td><td>'+a.email+'</td><td>'+a.major+'</td><td>'+a.risk+'</td><td>'+a.gpa.toFixed(2)+'</td><td>'+a.last+'</td>';
+      aBody.appendChild(tr);
+    }
+    var cBody=qs('#tblConvos tbody'); cBody.innerHTML='';
+    for(i=0;i<MOCK_CONVOS.length;i++){
+      var c=MOCK_CONVOS[i];
+      var trc=document.createElement('tr');
+      trc.innerHTML='<td>'+c.student+'</td><td>'+c.text+'</td><td>'+c.time+'</td>';
+      cBody.appendChild(trc);
+    }
+    var nBody=qs('#tblNotes tbody'); nBody.innerHTML='';
+    for(i=0;i<MOCK_NOTES.length;i++){
+      var n=MOCK_NOTES[i];
+      var trn=document.createElement('tr');
+      trn.innerHTML='<td>'+n.student+'</td><td>'+n.note+'</td><td>'+n.time+'</td>';
+      nBody.appendChild(trn);
+    }
+  }
+
+  // ===================== SESSION HELPERS =====================
+  function persistUser(user){ try{ sessionStorage.setItem('stark_user', JSON.stringify(user)); }catch(e){} }
+  function getUser(){ try{ return JSON.parse(sessionStorage.getItem('stark_user')||'null'); }catch(e){ return null; } }
+  function logout(){ try{ sessionStorage.removeItem('stark_user'); }catch(e){} showView('#view-login'); }
+
+  // ===================== 2FA HELPERS =====================
+  function maskEmail(email){
+    if(!email || email.indexOf('@') === -1) return email || '';
+    var parts = email.split('@'); var name=parts[0]; var domain=parts[1];
+    var m = name.length>2 ? name.charAt(0)+'***'+name.charAt(name.length-1) : name.charAt(0)+'*';
+    return m + '@' + domain;
+  }
+  function genOtp(){ return String(Math.floor(100000 + Math.random()*900000)); }
+  function persistPending(user, otp){ try{ sessionStorage.setItem('stark_pending', JSON.stringify({ user:user, otp:otp })); }catch(e){} }
+  function getPending(){ try{ return JSON.parse(sessionStorage.getItem('stark_pending')||'null'); }catch(e){ return null; } }
+  function clearPending(){ try{ sessionStorage.removeItem('stark_pending'); }catch(e){} }
+
+  // ===================== API + LOGIN =====================
+  var API_BASE = (function(){
+    var q = getQueryParam('api');
+    var env = window.STARK_API_BASE || '';
+    var base = q || env || 'http://127.0.0.1:8000';
+    return base.replace(/\/$/, '');
+  })();
+
+  function realLogin(email, password, ok, fail){
+    try{
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', API_BASE + '/api/auth/login', true);
+      xhr.setRequestHeader('Content-Type','application/json');
+      xhr.onreadystatechange = function(){
+        if(xhr.readyState === 4){
+          try{
+            if(xhr.status >=200 && xhr.status < 300){ ok(JSON.parse(xhr.responseText)); }
+            else{ var err={detail:'Login failed'}; try{ err=JSON.parse(xhr.responseText); }catch(e){} fail(new Error(err.detail||'Login failed')); }
+          }catch(e){ fail(new Error('Network/parse error')); }
+        }
+      };
+      xhr.onerror = function(){ fail(new Error('Network error')); };
+      xhr.send(JSON.stringify({email:email,password:password}));
+    }catch(ex){ fail(ex); }
+  }
+
+  function mockLogin(email,password){
+    for(var i=0;i<MOCK_USERS.length;i++){
+      var u=MOCK_USERS[i];
+      if(u.email.toLowerCase()===String(email).toLowerCase() && u.password===password){
+        return { email:u.email, full_name:u.full_name, role:u.role };
+      }
+    }
+    throw new Error('Invalid email or password (mock)');
+  }
+
+  function routeByRole(user){
+    if(user && user.role === 'advisor'){
+      setText('#advisorName', user.full_name || user.email); fillAdvisor(); showView('#view-advisor');
+    }else{
+      setText('#studentName', user.full_name || user.email); fillStudent(MOCK_STUDENT_DATA); showView('#view-student');
+    }
+  }
+
+  function showError(msg){ var a=qs('#loginAlert'); if(a){ a.textContent=msg; addClass(a,'show'); addClass(a,'error'); } }
+  function clearError(){ var a=qs('#loginAlert'); if(a){ a.textContent=''; removeClass(a,'show'); removeClass(a,'error'); } }
+
+  // ===================== EVENT WIRING =====================
+  function wire(){
+    var loginForm = document.getElementById('loginForm');
+    if(loginForm){
+      loginForm.addEventListener('submit', function(e){
+        if(e && e.preventDefault) e.preventDefault();
+        clearError();
+        var email = document.getElementById('email').value.replace(/^\s+|\s+$/g,'');
+        var password = document.getElementById('password').value.replace(/^\s+|\s+$/g,'');
+        if(!email || !password){ showError('Please enter email and password.'); return; }
+        realLogin(email,password, function(user){
+          // 2FA start instead of direct route
+          start2FA(user);
+        }, function(){
+          // fallback to mock
+          try{ var u = mockLogin(email,password); start2FA(u); }
+          catch(ex){ showError(ex.message || 'Invalid email or password.'); }
+        });
+      }, false);
+    }
+
+    var btnMock = document.getElementById('btnMock');
+    if(btnMock){ btnMock.addEventListener('click', function(){
+      clearError();
+      var email = document.getElementById('email').value.replace(/^\s+|\s+$/g,'');
+      var password = document.getElementById('password').value.replace(/^\s+|\s+$/g,'');
+      try{ var user = mockLogin(email,password); start2FA(user); }catch(err){ showError(err.message); }
+    }, false); }
+
+    var logoutStudent = document.getElementById('logoutStudent'); if(logoutStudent){ logoutStudent.addEventListener('click', logout, false); }
+    var logoutAdvisor = document.getElementById('logoutAdvisor'); if(logoutAdvisor){ logoutAdvisor.addEventListener('click', logout, false); }
+
+    // Advisor filters
+    var btnFilter = document.getElementById('btnFilter'); if(btnFilter){ btnFilter.addEventListener('click', function(){
+      var q = document.getElementById('filterQuery').value.toLowerCase().replace(/^\s+|\s+$/g,'');
+      var rows=[]; for(var i=0;i<MOCK_ADVISEES.length;i++){
+        var a = MOCK_ADVISEES[i];
+        var hay = (a.name+' '+a.email+' '+a.major+' '+a.risk).toLowerCase();
+        if(hay.indexOf(q) !== -1) rows.push(a);
+      }
+      var aBody=qs('#tblAdvisees tbody'); aBody.innerHTML='';
+      for(i=0;i<rows.length;i++){
+        var r=rows[i];
+        var tr=document.createElement('tr');
+        tr.innerHTML='<td>'+r.name+'</td><td>'+r.email+'</td><td>'+r.major+'</td><td>'+r.risk+'</td><td>'+r.gpa.toFixed(2)+'</td><td>'+r.last+'</td>';
+        aBody.appendChild(tr);
+      }
+    }, false); }
+
+    // Quick actions (demo)
+    var btnBroadcast = document.getElementById('btnBroadcast'); if(btnBroadcast){ btnBroadcast.addEventListener('click', function(){ alert('Broadcast sent to 134 students (demo).'); }, false); }
+    var btnNewNote = document.getElementById('btnNewNote'); if(btnNewNote){ btnNewNote.addEventListener('click', function(){ alert('Note saved (demo).'); }, false); }
+    var btnExport = document.getElementById('btnExport'); if(btnExport){ btnExport.addEventListener('click', function(){ alert('CSV exported (demo).'); }, false); }
+
+    // 2FA events
+    var backToLogin = document.getElementById('backToLogin'); if(backToLogin){ backToLogin.addEventListener('click', function(){ clearPending(); showView('#view-login'); }, false); }
+    var resendOtp = document.getElementById('resendOtp'); if(resendOtp){ resendOtp.addEventListener('click', function(){ var p=getPending(); if(!p) return; var c=genOtp(); persistPending(p.user,c); var dbg=qs('#otpDebug'); if(dbg) dbg.textContent='Demo code: '+c; }, false); }
+    var form2fa = document.getElementById('form2fa'); if(form2fa){ form2fa.addEventListener('submit', function(e){ if(e&&e.preventDefault)e.preventDefault(); var p=getPending(); var alertEl=qs('#otpAlert'); if(!p){ if(alertEl){ alertEl.textContent='Session expired. Please login again.'; addClass(alertEl,'show'); } showView('#view-login'); return; } var code=qs('#otpInput').value.replace(/^\s+|\s+$/g,''); var UNIVERSAL='123456'; if(code!==p.otp && code!==UNIVERSAL){ if(alertEl){ alertEl.textContent='Incorrect code. Try again, resend, or use 123456.'; addClass(alertEl,'show'); } return; } clearPending(); persistUser(p.user); routeByRole(p.user); }, false); }
+
+    // Restore session
+    var user = getUser(); if(user){ routeByRole(user); }
+  }
+
+  function start2FA(user){
+    var otp = genOtp(); persistPending(user, otp);
+    setText('#otpWhere', maskEmail(user.email || 'your email'));
+    var dbg = qs('#otpDebug'); if(dbg){ dbg.textContent = 'Demo code: ' + otp + '  •  or use 123456'; }
+    var inp = qs('#otpInput'); if(inp){ inp.value=''; }
+    var a = qs('#otpAlert'); if(a){ a.textContent=''; removeClass(a,'show'); }
+    showView('#view-2fa');
+  }
+
+  // Boot
+  (function(){ wire(); })();
+
+  // ===================== SELF TESTS (simple) =====================
+  try{
+    console.assert(maskEmail('a@b.com') === 'a*@b.com', 'mask short');
+    console.assert(maskEmail('alex@example.com').indexOf('@example.com')>0, 'mask keeps domain');
+    var o = genOtp(); console.assert(o.length===6, 'otp length');
+    console.assert(getQueryParam('nope')==='', 'query miss ok');
+  }catch(e){}
+  </script>
+</body>
+</html>
