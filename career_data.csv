@@ -1,0 +1,5 @@
+role_id,role_name,description,skills_required,recommended_courses,recommended_events
+R001,Business Analyst Intern,Analyze business data and create insights to support decision-making for cross-functional teams.,sql;excel;python,BUDT702;BUDT704;BUDT731,E001;E002;E003
+R002,Product Management Intern,"Support product managers in defining requirements, prioritizing features, and coordinating with engineering.",communication;analytics;product management,BUDT731;BUDT724,E001;E004
+R003,Data Analyst Intern,Work with large datasets to build dashboards and reports for stakeholders.,sql;python;data visualization,BUDT702;BUDT704,E002;E003
+R004,Consulting Intern,"Help consulting teams analyze client problems, build models, and present recommendations.",analytics;communication;powerpoint,BUDT731;BUDT723,E001;E004

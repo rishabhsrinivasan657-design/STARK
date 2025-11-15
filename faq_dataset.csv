@@ -1,0 +1,7 @@
+faq_id,category,question,answer,tags
+F001,Academics,How do I register for courses?,You can register using Testudo under the Registration menu. Make sure any advising blocks are cleared first.,registration;courses;testudo
+F002,Academics,Where can I find the academic calendar?,"The UMD academic calendar is available on the Registrar's website and includes start dates, breaks, and exam periods.",calendar;dates;semester
+F003,Housing,How can I request a roommate change?,Submit a roommate change request through the Department of Resident Life portal. You may also speak with your Resident Assistant.,housing;roommate
+F004,Finance,When is tuition due?,"Tuition due dates are posted on the Student Financial Services and Cashiering website, typically before the start of each term.",tuition;payment;deadlines
+F005,Health,Where is the University Health Center located?,"The University Health Center is located near Stamp Student Union and offers medical, mental health, and wellness services.",health;wellness
+F006,Career,How do I book an appointment with a career coach?,You can schedule an appointment through Careers4Terps by selecting an advisor and available time slot.,career;advising

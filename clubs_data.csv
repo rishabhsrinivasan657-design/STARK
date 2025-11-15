@@ -1,0 +1,6 @@
+club_id,name,category,description,skills_tags,meeting_pattern,link
+C001,AI Society,Tech,"Workshops, hackathons, and talks on artificial intelligence and machine learning.",python;ml;ai,"Bi-weekly, Fridays 5 PM",https://umd-clubs.example.com/ai-society
+C002,FinTech Club,Finance,Explore how technology is transforming financial services through speaker events and projects.,finance;fintech,"Weekly, Wednesdays 6 PM",https://umd-clubs.example.com/fintech
+C003,Consulting Club,Business,"Prepare for consulting careers with case practice, alumni panels, and networking.",consulting;cases,"Weekly, Tuesdays 7 PM",https://umd-clubs.example.com/consulting
+C004,Product Management Club,Business/Tech,Learn about product management through workshops and PM-style case events.,product management;roadmaps,"Bi-weekly, Thursdays 6 PM",https://umd-clubs.example.com/pm-club
+C005,International Student Association,Community,Support network for international students with cultural events and socials.,networking;community,"Monthly, Fridays 6 PM",https://umd-clubs.example.com/isa

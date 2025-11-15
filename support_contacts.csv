@@ -1,0 +1,6 @@
+support_id,category,name,email,phone,office_hours,notes
+SC001,Academics,MSIS Program Advisor,msis_advisor@umd.edu,301-000-0000,Mon–Thu 2–4 PM,"Course planning, degree requirements, and academic issues."
+SC002,Career,Smith Career Services,smithcareers@umd.edu,301-000-0001,Mon–Fri 9–5 PM,"Career coaching, resume reviews, and recruiting events."
+SC003,Finance,Student Financial Services,sfsc@umd.edu,301-000-0002,Mon–Fri 9–4 PM,"Tuition, billing, and payment plans."
+SC004,Health,University Health Center,health@umd.edu,301-000-0003,Mon–Fri 8–5 PM,"Medical, mental health, and wellness services."
+SC005,International,ISSS,isss@umd.edu,301-000-0004,Mon–Fri 9–4 PM,"Visa, CPT/OPT, and international student support."

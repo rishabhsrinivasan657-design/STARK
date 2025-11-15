@@ -1,0 +1,6 @@
+email_id,student_id,timestamp,subject,body,category
+E001,S101,2025-02-20 10:30,Confused about electives,"Hi advisor, I am not sure whether to take Data Mining or Cloud Computing next term. Could you please guide me?",Academic Advising
+E002,S102,2025-02-22 15:45,Scholarship renewal,"Do I need to maintain a 3.5 GPA to renew my scholarship next year, or is 3.0 sufficient?",Financial Aid
+E003,S103,2025-02-18 09:15,Consulting recruiting timeline,"When should I start preparing for consulting recruiting, and are there any Smith resources for case practice?",Career
+E004,S104,2025-02-25 13:00,Exam conflict,Two of my midterms are scheduled on the same day. What is the process to request a change?,Academics
+E005,S105,2025-02-26 11:20,Feeling overwhelmed,I am feeling overwhelmed adjusting to a new country and coursework. Are there any support resources I can reach out to?,Wellness

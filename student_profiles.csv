@@ -1,0 +1,6 @@
+student_id,name,program,level,term,gpa_current,interests,career_goal,clubs_joined,issues_reported,preferred_learning_style
+S101,Arya Kadarkar,MSIS,Graduate,Fall 2025,3.7,ai;analytics;gaming,Product Manager,AI Society;Consulting Club,Confused about analytics vs product pathway,Hands-on
+S102,Jordan Smith,MS Business Analytics,Graduate,Fall 2025,3.2,data science;statistics;sports,Data Scientist,Data Science Club,Worried about balancing work and study,Visual
+S103,Priya Patel,MSIS,Graduate,Spring 2025,3.9,consulting;strategy;case competitions,Consultant,Consulting Club;Net Impact,Looking for more leadership roles,Discussion-based
+S104,Alex Johnson,MBA,Graduate,Fall 2025,3.0,finance;investing,Financial Analyst,Finance Society,Concerned about GPA and scholarship,Reading
+S105,Emily Chen,MSIS,Graduate,Fall 2025,3.4,ux;product;design,Product Manager,International Student Association;Product Management Club,Homesickness and adapting to campus,Hands-on

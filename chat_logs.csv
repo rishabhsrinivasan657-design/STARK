@@ -1,0 +1,6 @@
+log_id,student_id,timestamp,user_query,bot_response
+L001,S101,2025-02-25 14:00,When is tuition due?,"Tuition due dates are posted on the Student Financial Services website, usually before the start of each term."
+L002,S102,2025-02-25 14:05,How do I register for courses?,You can register using Testudo under the Registration menu once advising blocks are cleared.
+L003,S103,2025-02-26 09:30,Are there any events for consulting recruiting?,"Yes, the Consulting Case Night on April 5 is a great opportunity to practice cases with peers and alumni."
+L004,S104,2025-02-26 10:10,I feel behind in my classes. What should I do?,"Consider visiting your professors' office hours and the tutoring center, and we can also discuss time management strategies."
+L005,S105,2025-02-27 16:45,How can I meet other international students?,You can attend the International Student Mixer on Feb 18 and join the International Student Association.

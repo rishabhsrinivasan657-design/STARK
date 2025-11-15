@@ -1,0 +1,6 @@
+course_id,course_name,credits,description,prerequisites,tags
+BUDT704,Data Processing and Analysis in Python,3,"Learn Python for data cleaning, analysis, and visualization with applications to business.",None,python;analytics
+BUDT702,Database Management Systems,3,"Covers ER modeling, SQL, and relational database design.",None,sql;database
+BUDT731,"Data, Models, and Decisions",3,Introduces quantitative modeling techniques to support managerial decision making.,None,optimization;decision-making
+BUDT723,Business Process Analysis,3,Analyze and improve business processes using modeling techniques.,None,process;modeling
+BUDT724,Project Management,3,"Covers project planning, execution, and control with a focus on PM tools and techniques.",None,project management;planning

@@ -1,0 +1,6 @@
+event_id,title,category,description,date,time,location,skills_tags,audience,link
+E001,Resume & LinkedIn Workshop,Career,Improve your resume and LinkedIn profile with feedback from Smith School career coaches.,2025-02-10,17:00-18:30,Van Munching Hall 1505,resume;networking,All Students,https://umd-events.example.com/E101
+E002,Python for Business Analytics,Academic,Intro Python workshop focused on data analysis and visualization using business datasets.,2025-03-15,10:00-13:00,Online,python;analytics,Graduate,https://umd-events.example.com/E102
+E003,Intro to SQL for Terps,Academic,Learn basic SQL queries on a sample UMD database with hands-on exercises.,2025-03-20,14:00-16:00,VMH 1212,sql;databases,Undergraduate;Graduate,https://umd-events.example.com/E103
+E004,Consulting Case Night,Career,Practice consulting case interviews with peers and alumni from top firms.,2025-04-05,18:00-20:00,VMH 2333,consulting;case interviews,Graduate,https://umd-events.example.com/E104
+E005,International Student Mixer,Campus Life,Meet other international students and learn about campus resources and cultural orgs.,2025-02-18,16:00-18:00,Stamp Student Union,networking;community,All Students,https://umd-events.example.com/E105

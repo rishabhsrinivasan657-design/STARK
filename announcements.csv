@@ -1,0 +1,5 @@
+announcement_id,date,title,description,category,link
+A001,2025-03-01,Registration Opens for Fall 2025,Students can start registering for Fall 2025 classes on March 5 through Testudo.,Academic,https://umd-announcements.example.com/A001
+A002,2025-03-05,Smith School Career Fair,Meet 50+ employers at the Smith School Career Fair on March 12 in Van Munching Hall.,Career,https://umd-announcements.example.com/A002
+A003,2025-02-20,Spring Break Reminder,No classes will be held during Spring Break from March 15–23.,Campus Life,https://umd-announcements.example.com/A003
+A004,2025-02-28,Wellness Week at UMD,"Join workshops on stress management, sleep, and mindfulness throughout Wellness Week.",Health,https://umd-announcements.example.com/A004

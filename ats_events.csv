@@ -1,0 +1,5 @@
+event_id,event_name,category,description,skills_covered,date,location,delivery_mode,link
+E001,Python for Business Analytics Workshop,Workshop,"Hands-on introduction to Python using business datasets from marketing and operations.",python;pandas;numpy,2025-03-15,Van Munching Hall 1505,In-person,https://umd-events.example.com/E001
+E002,Intro to SQL for Terps,Workshop,"Learn basic SELECT, JOIN, and aggregation queries on a sample UMD course database.",sql;databases,2025-03-20,VMH 1212,In-person,https://umd-events.example.com/E002
+E003,Tableau Dashboard Night,Career,"Build dashboards using UMD career outcomes data with support from career coaches.",tableau;data visualization,2025-04-02,Online,Online,https://umd-events.example.com/E003
+E004,Business Communication Bootcamp,Career,"Improve your presentation and stakeholder communication skills with interactive practice.",communication;presentation,2025-02-28,VMH 2333,In-person,https://umd-events.example.com/E004
